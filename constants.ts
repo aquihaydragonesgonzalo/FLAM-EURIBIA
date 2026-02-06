@@ -3,7 +3,7 @@ import { Coords, Activity, AudioTrack, Pronunciation } from './types';
 export const SHIP_DEPARTURE_TIME = "18:00";
 export const ARRIVAL_TIME = "07:00";
 export const ONBOARD_TIME = "17:45";
-export const UPDATE_DATE = "04 de diciembre de 2025";
+export const UPDATE_DATE = "05 de febrero de 2025";
 
 export const COORDS: Record<string, Coords> = {
     FLAM_DOCK: { lat: 60.863772, lng: 7.119263 }, // EMBARCADERO CRUCERO
