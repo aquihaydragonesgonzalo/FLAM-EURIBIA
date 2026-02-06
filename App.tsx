@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { CalendarClock, Map as MapIcon, Wallet, BookOpen, Anchor } from 'lucide-react';
-import { INITIAL_ITINERARY, SHIP_DEPARTURE_TIME, ONBOARD_TIME, ARRIVAL_TIME } from './constants';
+import { CalendarClock, Map as MapIcon, Wallet, BookOpen, Anchor, Lock, ArrowRight } from 'lucide-react';
+import { INITIAL_ITINERARY, SHIP_DEPARTURE_TIME, ONBOARD_TIME, ARRIVAL_TIME, VALID_CODES } from './constants';
 import { Activity, Coords } from './types';
 import Timeline from './components/Timeline';
 import Budget from './components/Budget';
@@ -9,6 +9,11 @@ import MapComponent from './components/MapComponent';
 import ActivityDetailModal from './components/ActivityDetailModal';
 
 const App: React.FC = () => {
+    // Auth State
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [accessCode, setAccessCode] = useState('');
+    const [authError, setAuthError] = useState(false);
+
     const [itinerary, setItinerary] = useState<Activity[]>(INITIAL_ITINERARY);
     const [activeTab, setActiveTab] = useState<'timeline' | 'map' | 'budget' | 'guide'>('timeline');
     const [userLocation, setUserLocation] = useState<Coords | null>(null);
@@ -20,9 +25,30 @@ const App: React.FC = () => {
     const [countdown, setCountdown] = useState('');
     const [countdownLabel, setCountdownLabel] = useState('Salida');
 
+    // Check Auth on Mount
+    useEffect(() => {
+        const storedAuth = localStorage.getItem('flam_guide_auth');
+        if (storedAuth === 'true') {
+            setIsAuthenticated(true);
+        }
+    }, []);
+
+    const handleLogin = (e?: React.FormEvent) => {
+        if(e) e.preventDefault();
+        
+        if (VALID_CODES.includes(accessCode.toUpperCase().trim())) {
+            localStorage.setItem('flam_guide_auth', 'true');
+            setIsAuthenticated(true);
+            setAuthError(false);
+        } else {
+            setAuthError(true);
+            setAccessCode('');
+        }
+    };
+
     // Geolocation
     useEffect(() => {
-        if ('geolocation' in navigator) {
+        if (isAuthenticated && 'geolocation' in navigator) {
             const id = navigator.geolocation.watchPosition(
                 p => setUserLocation({ lat: p.coords.latitude, lng: p.coords.longitude }),
                 e => console.warn(e),
@@ -30,10 +56,12 @@ const App: React.FC = () => {
             );
             return () => navigator.geolocation.clearWatch(id);
         }
-    }, []);
+    }, [isAuthenticated]);
 
     // Device Orientation (Compass)
     useEffect(() => {
+        if (!isAuthenticated) return;
+
         const handleOrientation = (event: DeviceOrientationEvent) => {
             // iOS uses webkitCompassHeading for true north, Android/Standard uses alpha
             let heading = 0;
@@ -51,10 +79,12 @@ const App: React.FC = () => {
         return () => {
             window.removeEventListener('deviceorientation', handleOrientation);
         };
-    }, []);
+    }, [isAuthenticated]);
 
     // Smart Countdown
     useEffect(() => {
+        if (!isAuthenticated) return;
+
         const interval = setInterval(() => {
             const now = new Date();
             
@@ -89,7 +119,7 @@ const App: React.FC = () => {
             }
         }, 1000);
         return () => clearInterval(interval);
-    }, []);
+    }, [isAuthenticated]);
 
     const handleToggleComplete = (id: string) => {
         setItinerary(prev => prev.map(a => a.id === id ? { ...a, completed: !a.completed } : a));
@@ -104,8 +134,57 @@ const App: React.FC = () => {
         setSelectedActivityConfig({ activity, autoOpenAudio });
     };
 
+    // LOGIN SCREEN RENDER
+    if (!isAuthenticated) {
+        return (
+            <div className="flex flex-col h-screen bg-fjord-900 items-center justify-center p-6 text-white">
+                <div className="w-full max-w-sm bg-white/10 backdrop-blur-lg rounded-2xl p-8 shadow-2xl border border-white/20">
+                    <div className="flex flex-col items-center mb-8">
+                        <div className="bg-white/20 p-4 rounded-full mb-4 ring-4 ring-white/5">
+                            <Lock size={40} className="text-white" />
+                        </div>
+                        <h1 className="text-2xl font-bold">Acceso Restringido</h1>
+                        <p className="text-fjord-100 text-sm text-center mt-2">
+                            Introduce el código de viajero que te facilitará el creador de esta APP para acceder a la guía de Flåm 2026.
+                        </p>
+                    </div>
+
+                    <form onSubmit={handleLogin} className="space-y-4">
+                        <div>
+                            <input 
+                                type="text" 
+                                placeholder="CÓDIGO DE ACCESO" 
+                                value={accessCode}
+                                onChange={(e) => { setAccessCode(e.target.value); setAuthError(false); }}
+                                className="w-full text-center bg-black/20 border border-white/30 rounded-xl px-4 py-3 text-white placeholder-white/50 tracking-widest font-bold outline-none focus:border-sunset-500 focus:bg-black/30 transition-all uppercase"
+                            />
+                            {authError && (
+                                <p className="text-red-300 text-xs font-bold text-center mt-2 animate-pulse">
+                                    Código incorrecto. Inténtalo de nuevo.
+                                </p>
+                            )}
+                        </div>
+                        <button 
+                            type="submit"
+                            disabled={!accessCode}
+                            className="w-full bg-gradient-to-r from-sunset-500 to-orange-600 text-white font-bold py-3.5 rounded-xl shadow-lg hover:shadow-xl active:scale-95 transition-all flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            <span className="mr-2">Entrar a la Guía</span>
+                            <ArrowRight size={18} />
+                        </button>
+                    </form>
+                    
+                    <div className="mt-8 text-center text-[10px] text-white/30">
+                        © 2026 Gonzalo Arenas de la Hoz
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // MAIN APP RENDER
     return (
-        <div className="flex flex-col h-screen bg-slate-50 text-slate-900 font-sans overflow-hidden select-none">
+        <div className="flex flex-col h-screen bg-slate-50 text-slate-900 font-sans overflow-hidden select-none animate-in fade-in duration-500">
             <header className="bg-fjord-900 text-white p-3 shadow-md z-20 flex justify-between items-center shrink-0">
                 <div className="flex items-center">
                     <Anchor className="mr-2 text-sunset-500" size={20} />
