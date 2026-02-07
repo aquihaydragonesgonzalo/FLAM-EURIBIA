@@ -1,7 +1,7 @@
 import { Coords, Activity, AudioTrack, Pronunciation } from './types';
 
 // CODIGOS DE ACCESO (Puedes añadir los que quieras aquí, en mayúsculas)
-export const VALID_CODES = ['P1L4RR0M', 'G0NZ4L0A', 'CR15T1N4S', 'AHD', 'MM4RT1B4', 'S0N14R35', 'MV1CT0R14', 'J4V13R1E', '3FF1C13NTL7130', '4N4R0M3R0', 'BLANCA'];
+export const VALID_CODES = ['P1L4RR0M', 'G0NZ4L0A', 'CR15T1N4S', 'AHD', 'MM4RT1B4', 'S0N14R35', 'MV1CT0R14', 'J4V13R1E', '3FF1C13NTL7130', '4N4R0M3R0', 'C4RM3NGC', '54NDR4DB', 'L0URD35JM', 'J053LUP4'];
 
 export const SHIP_DEPARTURE_TIME = "18:00";
 export const ARRIVAL_TIME = "07:00";
